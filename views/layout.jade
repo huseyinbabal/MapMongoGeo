@@ -1,0 +1,91 @@
+html
+    head
+        title Simple Map
+        meta(name='viewport', content='initial-scale=1.0, user-scalable=no')
+        meta(charset='utf-8')
+        style.
+            html, body, #map-canvas {
+                height: 100%;
+                margin: 0px;
+                padding: 0px
+            }
+        link(rel='stylesheet', href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css')
+        script(src='http://code.jquery.com/jquery-2.1.4.min.js')
+        script(src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js')
+        script(src='https://maps.googleapis.com/maps/api/js?v=3.exp')
+        script.
+            var map;
+            var bounds = new google.maps.LatLngBounds();
+            function SearchBox() {
+                var searchForm = $('<form class=form-inline method="post" action="/"><div class=form-group><label class=sr-only for=query>Query</label><input class=form-control id=query name=query placeholder=Query></div><button type=submit class="btn btn-primary">Search</button></form>')
+                var div = $('<div class="geoSearchBox"></div>')
+                        .append(searchForm);
+                return div.get(0);
+            }
+            function initialize() {
+                var mapOptions = {
+                    zoom: 8,
+                    center: new google.maps.LatLng(-34.397, 150.644)
+                };
+                map = new google.maps.Map(document.getElementById('map-canvas'),
+                        mapOptions);
+                map.setTilt(45);
+                map.controls[google.maps.ControlPosition.TOP_LEFT].push(new SearchBox());
+
+
+
+                // Multiple Markers
+                var locations = !{JSON.stringify(locations)}
+                var markers = [];
+                var infoWindowContent = []
+                for (var i = 0; i < locations.length; i++) {
+                    var location = locations[i];
+                    markers.push([location.properties.state_province + ", " + location.properties.city, location.geometry.coordinates[1], location.geometry.coordinates[0]])
+                    infoWindowContent.push(['<div class="info_content">' +
+                    '<h3>' + location.properties.name_of_org + '</h3>' +
+                    '<p>' + location.properties.abstract1 + '(' + location.properties.city + ', ' + location.geometry.coordinates[1] + ',' + location.geometry.coordinates[0] + ')</p></div>']);
+                }
+                var infoWindow = new google.maps.InfoWindow(), marker, i;
+
+                for( i = 0; i < markers.length; i++ ) {
+                    var position = new google.maps.LatLng(markers[i][1], markers[i][2]);
+                    bounds.extend(position);
+                    marker = new google.maps.Marker({
+                        position: position,
+                        map: map,
+                        title: markers[i][0]
+                    });
+
+                    // Allow each marker to have an info window
+                    google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                        return function() {
+                            infoWindow.setContent(infoWindowContent[i][0]);
+                            infoWindow.open(map, marker);
+                        }
+                    })(marker, i));
+
+                    // Automatically center the map fitting all markers on the screen
+                    map.fitBounds(bounds);
+                }
+
+                var boundsListener = google.maps.event.addListener((map), 'bounds_changed', function(event) {
+                    this.setZoom(3);
+                    google.maps.event.removeListener(boundsListener);
+                });
+
+                google.maps.event.addListener(map, 'click', function (event) {
+                    displayCoordinates(event.latLng);
+                });
+            }
+
+            google.maps.event.addDomListener(window, 'load', initialize);
+
+            function displayCoordinates(pnt) {
+                var lat = pnt.lat();
+                lat = lat.toFixed(4);
+                var lng = pnt.lng();
+                lng = lng.toFixed(4);
+                alert("Latitude: " + lat + "  Longitude: " + lng);
+            }
+    body
+        block content
